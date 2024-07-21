@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.animation as animation
 
-N = 100 #taille de la grille (size)
+N = 100 # taille de la grille (size)
 ON = 255
 OFF = 0
 
@@ -17,7 +17,7 @@ def add_color(grid):
     color_grid[grid == OFF] = np.array([253, 253, 254])
     return color_grid
 
-def update(frameNum, img, grid, N):
+def update(grid, N):
     '''
     Fonction update (update function)
     '''
@@ -26,27 +26,59 @@ def update(frameNum, img, grid, N):
         for b in range(N):
             total = int((grid[a,(b-1)%N]+grid[a,(b+1)%N]+grid[(a-1)%N,b]+grid[(a+1)%N,b]+grid[(a-1)%N,(b-1)%N]+grid[(a-1)%N,(b+1)%N]+grid[(a+1)%N,(b-1)%N]+grid[(a+1)%N,(b+1)%N])/255)
             if grid[a, b]  == ON:
-                if (total < 2) or (total > 3):
-                    nouvGrid[a,b] = OFF
+                #Rules 1 and 2
+                # If a cell has less than 2 neighbours it dies
+                # If a cell has more than 3 neighbors it dies
+                if (total < 2) or (total > 5):
+                    nouvGrid[a,b] = OFF            
             else:
+                # Rule 4
+                # If a dead cell has exactly 3 live neighbours it will come to life
                 if total == 3:
                     nouvGrid[a,b] = ON
+    return nouvGrid
 
-    img.set_data(add_color(nouvGrid))
-    grid[:] = nouvGrid[:]
-    return img,
+def set_initial_condition(grid, coordinates):
+    '''
+    Set the initial condition based on user input coordinates
+    coordinates is a list of tuples (x, y)
+    '''
+    for x, y in coordinates:
+        grid[x % N, y % N] = ON
 
 def main():
     '''
     Fonction principale (main function)
     '''
-    vals = [ON, OFF]
-    grid = np.random.choice(vals, N*N, p=[0.2, 0.8]).reshape(N,N) #génération de départ aleatoire (random generation)
+    # Initialize the grid with all cells set to OFF
+    grid = np.full((N, N), OFF)
+    
+    # User-defined starting coordinates
+        # Combined set of starting coordinates for multiple patterns
+    starting_coords = [
+        # Block (Still Life)
+        (20, 20), (20, 21), (21, 20), (21, 21),
+        # Blinker (Oscillator)
+        (30, 31), (30, 32), (30, 33),
+        # Glider (Spaceship)
+        (40, 41), (41, 42), (42, 40), (42, 41), (42, 42),
+        # Toad (Oscillator)
+        (50, 51), (50, 52), (50, 53), (51, 50), (51, 51), (51, 52),
+        # Beacon (Oscillator)
+        (60, 60), (60, 61), (61, 60), (61, 61), (62, 62), (62, 63), (63, 62), (63, 63)
+    ]
+    set_initial_condition(grid, starting_coords)
+    
     fig, ax = plt.subplots()
     img = ax.imshow(add_color(grid), interpolation='nearest')
-    ani = animation.FuncAnimation(fig,update,fargs=(img,grid,N,),frames= 10,interval= 60)
+
+    steps = 200  # Number of steps to run
+    for _ in range(steps):
+        grid = update(grid, N)
+        img.set_data(add_color(grid))
+        plt.pause(0.1)  # Pause to create the animation effect
+    
     plt.show()
-    return ani
-  
+
 if __name__ == "__main__":
     main()
